@@ -13,6 +13,8 @@ export const OpeningScene: React.FC<OpeningSceneProps> = ({ onScrollToHomepage }
   const [stars, setStars] = useState<Array<{ id: number; left: number; top: number; size: number; delay: number }>>([]);
   const musicTriggeredRef = useRef(false);
 
+  const [isPastChamber, setIsPastChamber] = useState(false);
+
   // Scroll progress through the sticky track
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -25,22 +27,22 @@ export const OpeningScene: React.FC<OpeningSceneProps> = ({ onScrollToHomepage }
   const sealOpacity = useTransform(scrollYProgress, [0, 0.10], [1, 0]);
 
   // 2. Letter emerges completely from envelope (0.14 -> 0.48)
-  // Letter moves upward by -290px while envelope base moves downward by +75px
-  // By 0.48, the letter is 100% FULLY OUT of the envelope.
+  // By 0.48, the letter is 100% FULLY OUT of the envelope and centered in the viewport.
   // From 0.48 to 0.85, the letter stays FULLY OUT and locked in place so the visitor can read it comfortably.
-  // Only after 0.85 does it move to the next section (homepage).
-  const letterY = useTransform(scrollYProgress, [0.14, 0.48, 0.85, 1.0], [0, -290, -290, -320]);
+  // Only after 0.85 does it smoothly transition to the homepage.
+  const letterY = useTransform(scrollYProgress, [0.14, 0.48, 0.85, 1.0], [0, -145, -145, -200]);
   const letterScale = useTransform(scrollYProgress, [0.14, 0.48, 0.85, 1.0], [0.94, 1.04, 1.04, 1.0]);
-  const envelopeY = useTransform(scrollYProgress, [0.14, 0.48, 0.85, 1.0], [0, 75, 75, 90]);
+  const envelopeY = useTransform(scrollYProgress, [0.14, 0.48, 0.85, 1.0], [0, 50, 50, 60]);
 
   // 3. Subtle prompt indicators
   const initialPromptOpacity = useTransform(scrollYProgress, [0, 0.08], [1, 0]);
   const letterPromptOpacity = useTransform(scrollYProgress, [0.42, 0.50, 0.85, 0.95], [0, 1, 1, 0]);
   const sceneOpacity = useTransform(scrollYProgress, [0.86, 1.0], [1, 0.75]);
 
-  // Trigger soft background music once user starts scrolling
+  // Trigger soft background music & handle pinning
   useEffect(() => {
     return scrollYProgress.onChange((val) => {
+      setIsPastChamber(val >= 0.92);
       if (val > 0.05 && !musicTriggeredRef.current) {
         musicTriggeredRef.current = true;
         sound.startBackgroundMusic();
@@ -77,10 +79,13 @@ export const OpeningScene: React.FC<OpeningSceneProps> = ({ onScrollToHomepage }
     <section 
       ref={containerRef}
       id="invitation-hero"
-      className="relative min-h-[280vh] w-full max-w-full overflow-hidden select-none"
+      className="relative min-h-[280vh] w-full max-w-full select-none"
     >
-      {/* STICKY VIEWPORT CONTAINER */}
-      <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden px-4">
+      {/* ROCK-SOLID PINNED VIEWPORT CONTAINER */}
+      <div className={isPastChamber 
+        ? "absolute bottom-0 inset-x-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden px-4" 
+        : "fixed inset-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden px-4 z-30 pointer-events-auto"
+      }>
         
         {/* 1. CINEMATIC WARM BACKGROUND WITH FLOATING SPHERES */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
