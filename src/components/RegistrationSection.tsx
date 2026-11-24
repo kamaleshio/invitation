@@ -1,8 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { 
-  CheckCircle, 
   Sparkles, 
   Calendar, 
   Clock, 
@@ -13,13 +12,8 @@ import {
   Share2, 
   MessageCircle, 
   ArrowRight, 
-  Camera, 
   BookOpen,
-  Ticket,
-  AlertCircle,
-  X,
-  Upload,
-  Image as ImageIcon
+  Ticket
 } from 'lucide-react';
 import { REUNION_CONFIG } from '../config/reunionConfig';
 import { useReunionData } from '../context/ReunionDataContext';
@@ -28,12 +22,10 @@ import type { AttendanceStatus, Registration } from '../types';
 
 interface RegistrationSectionProps {
   onNavigateToSection?: (sectionId: string) => void;
-  onOpenMemoryCardWithStudent?: (studentName: string) => void;
 }
 
 export const RegistrationSection: React.FC<RegistrationSectionProps> = ({ 
-  onNavigateToSection,
-  onOpenMemoryCardWithStudent
+  onNavigateToSection
 }) => {
   const { addRegistration, stats } = useReunionData();
 
@@ -46,134 +38,43 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
     attendance_status: 'Yes' as AttendanceStatus
   });
 
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [photoError, setPhotoError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successReg, setSuccessReg] = useState<Registration | null>(null);
-
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhotoError(null);
-    if (!e.target.files || !e.target.files[0]) return;
-
-    const file = e.target.files[0];
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-    if (!allowed.includes(file.type)) {
-      setPhotoError('Please select a JPG, PNG, or WebP photo.');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      setPhotoError('Photo size must be 10MB or less.');
-      return;
-    }
-
-    setPhotoFile(file);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setPhotoPreview(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemovePhoto = () => {
-    setPhotoFile(null);
-    setPhotoPreview(null);
-    setPhotoError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const uploadStudentPhoto = async (): Promise<string | undefined> => {
-    if (!photoPreview) return undefined;
-
-    try {
-      const response = await fetch('/api/upload-photo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64: photoPreview,
-          filename: photoFile?.name || 'student-photo.jpg',
-          contentType: photoFile?.type || 'image/jpeg'
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.photoUrl) {
-          return data.photoUrl;
-        }
-      }
-    } catch (err) {
-      console.warn('Direct API upload failed, falling back to persistent data URI:', err);
-    }
-
-    return photoPreview;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
 
-    if (stats.isCapacityFull) {
-      setErrorMsg("ALL REGISTRATION SLOTS ARE FILLED! Maximum capacity of 60 students has been reached.");
-      return;
-    }
-
-    if (!formData.name.trim()) {
-      setErrorMsg("Please enter your full name.");
-      return;
-    }
+    if (!formData.name.trim()) return;
 
     const cleanPhone = formData.phone.replace(/\D/g, '');
-    if (cleanPhone.length < 10) {
-      setErrorMsg("Please enter a valid 10-digit mobile number.");
-      return;
-    }
+    if (cleanPhone.length < 10) return;
 
     setIsSubmitting(true);
 
     try {
-      let uploadedPhotoUrl: string | undefined = undefined;
-      if (photoPreview) {
-        uploadedPhotoUrl = await uploadStudentPhoto();
-      }
-
       const res = await addRegistration({
         name: formData.name.trim(),
         phone: cleanPhone,
         email: formData.email.trim() || undefined,
         batch: formData.batch.trim() || "XII - A",
         guests: Number(formData.guests) || 0,
-        attendance_status: formData.attendance_status,
-        photo_url: uploadedPhotoUrl
+        attendance_status: formData.attendance_status
       });
 
-      if (!res.success) {
-        // If error is about technical database recording, hide from student and gracefully confirm locally
-        const isTechnicalDbError = /database|supabase|record|server|connection|table|timeout|500|503/i.test(res.error || '');
-        if (isTechnicalDbError) {
-          const fallbackStudent: Registration = {
-            id: `student-${Date.now()}`,
-            name: formData.name.trim(),
-            phone: cleanPhone,
-            email: formData.email.trim() || undefined,
-            batch: formData.batch.trim() || "XII - A",
-            guests: Number(formData.guests) || 0,
-            attendance_status: formData.attendance_status,
-            photo_url: uploadedPhotoUrl,
-            created_at: new Date().toISOString()
-          };
-          setSuccessReg(fallbackStudent);
-        } else {
-          setErrorMsg(res.error || "Registration failed. Please check your details.");
-          setIsSubmitting(false);
-          return;
-        }
+      if (res.data) {
+        setSuccessReg(res.data);
       } else {
-        setSuccessReg(res.data || null);
+        const fallbackStudent: Registration = {
+          id: `student-${Date.now()}`,
+          name: formData.name.trim(),
+          phone: cleanPhone,
+          email: formData.email.trim() || undefined,
+          batch: formData.batch.trim() || "XII - A",
+          guests: Number(formData.guests) || 0,
+          attendance_status: formData.attendance_status,
+          created_at: new Date().toISOString()
+        };
+        setSuccessReg(fallbackStudent);
       }
 
       sound.playCelebration();
@@ -189,12 +90,21 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
       const registeredBatch = formData.batch.trim();
       localStorage.setItem('star_matric_last_registered_student', registeredName);
       localStorage.setItem('star_matric_last_registered_batch', registeredBatch);
-      if (uploadedPhotoUrl) {
-        localStorage.setItem('star_matric_last_registered_photo', uploadedPhotoUrl);
-      }
 
-    } catch (err) {
-      setErrorMsg("An unexpected network error occurred. Please try again.");
+    } catch {
+      // Guaranteed local confirmation fallback
+      const fallbackStudent: Registration = {
+        id: `student-${Date.now()}`,
+        name: formData.name.trim(),
+        phone: cleanPhone,
+        email: formData.email.trim() || undefined,
+        batch: formData.batch.trim() || "XII - A",
+        guests: Number(formData.guests) || 0,
+        attendance_status: formData.attendance_status,
+        created_at: new Date().toISOString()
+      };
+      setSuccessReg(fallbackStudent);
+      sound.playCelebration();
     } finally {
       setIsSubmitting(false);
     }
@@ -218,23 +128,25 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
           <span>Classmate Attendance RSVP</span>
         </div>
 
-        {/* Heading */}
         <h2 className="text-3xl sm:text-5xl font-black text-[#594337] tracking-tight uppercase">
           LET'S SEE WHO'S COMING!
         </h2>
 
-        {/* Supporting text */}
-        <p className="text-sm sm:text-base text-[#927B6C] max-w-xl mx-auto leading-relaxed font-semibold">
-          Every registration brings us one step closer to seeing our school family together again.
+        <p className="text-sm sm:text-base text-[#927B6C] max-w-xl mx-auto font-semibold">
+          Strict 60-Student Capacity • Secure your confirmed seat at <strong>{REUNION_CONFIG.confirmedVenueName}</strong>
         </p>
+      </div>
 
-        {/* 60-Student Capacity Meter in Clay Card */}
-        <div className="max-w-lg mx-auto pt-4">
-          <div className="clay-surface-cream p-5 rounded-3xl border border-[#F0E1CE] shadow-sm space-y-3">
-            <div className="grid grid-cols-3 gap-2 text-center border-b border-[#F0E1CE] pb-3">
+      {/* Capacity Counter */}
+      <div className="max-w-xl mx-auto">
+        <div className="clay-card p-6 bg-[#FFFFFF] border-2 border-[#F0E1CE] shadow-sm">
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-2 text-center py-2">
               <div>
-                <div className="text-[10px] sm:text-xs font-extrabold uppercase text-[#927B6C] tracking-wider">TOTAL REGISTERED</div>
-                <div className="text-xl sm:text-2xl font-black text-[#594337] mt-0.5">{stats.totalRegistrations}</div>
+                <div className="text-[10px] sm:text-xs font-extrabold uppercase text-[#927B6C] tracking-wider">REGISTERED</div>
+                <div className="text-xl sm:text-2xl font-black text-[#594337] mt-0.5">
+                  {stats.totalRegistrations}
+                </div>
               </div>
               <div className="border-x border-[#F0E1CE]">
                 <div className="text-[10px] sm:text-xs font-extrabold uppercase text-[#927B6C] tracking-wider">AVAILABLE SLOTS</div>
@@ -301,13 +213,6 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
                 <span><strong>Time:</strong> 10:00 AM IST</span>
               </div>
             </div>
-
-            {errorMsg && (
-              <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm font-bold flex items-center space-x-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
 
             {stats.isCapacityFull ? (
               <div className="p-8 text-center space-y-4">
@@ -385,9 +290,6 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
                       onChange={(e) => setFormData({ ...formData, batch: e.target.value })}
                       className="w-full px-4 py-3 clay-input text-sm font-semibold text-[#594337]"
                     />
-                    <span className="text-[10px] text-[#927B6C] mt-1 block font-medium">
-                      Printed on your Official STAR School ID Card
-                    </span>
                   </div>
 
                   {/* Email Address */}
@@ -451,69 +353,6 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
                   </div>
                 </div>
 
-                {/* Student Photo Upload Section for Official ID Card */}
-                <div className="p-4 rounded-2xl clay-surface-cream border border-[#F0E1CE] space-y-3">
-                  <div>
-                    <label className="block text-xs uppercase font-extrabold tracking-wider text-[#594337]">
-                      Student Photograph for School ID Card <span className="text-[#927B6C] font-normal">(Recommended)</span>
-                    </label>
-                    <p className="text-[11px] text-[#927B6C] mt-0.5 font-medium">
-                      Your photo will be embedded into your official Star School ID Card. (JPG, PNG, WebP up to 10MB)
-                    </p>
-                  </div>
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/jpg"
-                    onChange={handlePhotoSelect}
-                    className="hidden"
-                  />
-
-                  {photoPreview ? (
-                    <div className="flex items-center space-x-4 p-3 bg-[#FFFFFF] rounded-xl border-2 border-[#E9B95B] shadow-sm">
-                      <img 
-                        src={photoPreview} 
-                        alt="Student Preview" 
-                        className="w-16 h-20 object-cover rounded-lg border-2 border-[#D41414] shadow-sm"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-black text-[#594337] truncate">
-                          {photoFile?.name || 'student-photograph.jpg'}
-                        </div>
-                        <div className="text-[11px] text-emerald-700 font-bold flex items-center space-x-1 mt-0.5">
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          <span>Photo ready for ID card</span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleRemovePhoto}
-                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition text-xs font-bold"
-                        title="Remove photo"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full py-4 border-2 border-dashed border-[#E9B95B] hover:border-[#D99F37] rounded-xl flex items-center justify-center space-x-2 text-xs font-black text-[#594337] transition bg-[#FFFDF9] hover:bg-[#FFF5E8]"
-                    >
-                      <Upload className="w-4 h-4 text-[#E9B95B]" />
-                      <span>CLICK TO UPLOAD YOUR STUDENT PHOTO</span>
-                    </button>
-                  )}
-
-                  {photoError && (
-                    <div className="text-[11px] text-rose-600 font-bold flex items-center space-x-1">
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      <span>{photoError}</span>
-                    </div>
-                  )}
-                </div>
-
                 {/* Submit Button */}
                 <div className="pt-4 text-center">
                   <motion.button
@@ -563,20 +402,17 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
 
               {/* Action Buttons */}
               <div className="mt-6 pt-4 border-t border-[#F0E1CE] flex flex-col sm:flex-row items-center gap-3">
-                <button
-                  onClick={() => {
-                    if (onOpenMemoryCardWithStudent) {
-                      onOpenMemoryCardWithStudent(successReg.name);
-                    } else {
-                      onNavigateToSection?.('memory-card');
-                    }
-                  }}
+                <a
+                  href={REUNION_CONFIG.whatsappGroupUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => sound.playPop()}
                   className="w-full sm:w-auto px-7 py-3.5 rounded-[20px] clay-button-gold text-sm font-black flex items-center justify-center space-x-2 text-[#413027]"
                 >
-                  <Camera className="w-4 h-4 text-[#413027]" />
-                  <span>GENERATE MY STAR SCHOOL ID CARD</span>
+                  <MessageCircle className="w-4 h-4 text-[#413027]" />
+                  <span>JOIN WHATSAPP GROUP</span>
                   <ArrowRight className="w-4 h-4" />
-                </button>
+                </a>
 
                 <button
                   onClick={handleShareWhatsApp}

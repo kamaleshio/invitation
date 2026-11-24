@@ -6,7 +6,6 @@ import { CountdownSection } from './components/CountdownSection';
 import { AboutSection } from './components/AboutSection';
 import { SchoolMemoryGallery } from './components/SchoolMemoryGallery';
 import { RegistrationSection } from './components/RegistrationSection';
-import { MemoryCardGeneratorSection } from './components/MemoryCardGeneratorSection';
 import { MessageWallSection } from './components/MessageWallSection';
 import { WhatsAppSection } from './components/WhatsAppSection';
 import { HeartCursorTrail } from './components/HeartCursorTrail';
@@ -65,8 +64,6 @@ export const AppContent: React.FC = () => {
     return window.location.hash === '#admin';
   });
 
-  const [prefilledStudentName, setPrefilledStudentName] = useState<string>('');
-
   // Listen to hash changes for #admin
   useEffect(() => {
     const handleHashChange = () => {
@@ -83,11 +80,6 @@ export const AppContent: React.FC = () => {
     if (elem) {
       elem.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  const handleOpenMemoryCardWithStudent = (name: string) => {
-    setPrefilledStudentName(name);
-    handleNavigateToSection('memory-card');
   };
 
   return (
@@ -180,17 +172,9 @@ export const AppContent: React.FC = () => {
           {/* 6. Student Registration ("LET'S SEE WHO'S COMING!" - Max 60 Limit) */}
           <RegistrationSection 
             onNavigateToSection={handleNavigateToSection}
-            onOpenMemoryCardWithStudent={handleOpenMemoryCardWithStudent}
           />
 
-          {/* 7. PERSONALIZED REUNION MEMORY CARD GENERATOR (Star School ID Card Studio) */}
-          {settings.card_generator_enabled !== false && (
-            <MemoryCardGeneratorSection 
-              initialStudentName={prefilledStudentName}
-            />
-          )}
-
-          {/* 8. Sticky Notes Memory Wall */}
+          {/* 7. Sticky Notes Memory Wall */}
           <MessageWallSection />
 
           {/* 9. WhatsApp Sharing & QR Section */}

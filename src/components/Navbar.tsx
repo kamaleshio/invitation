@@ -60,7 +60,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onNavigateTo }) => 
     { id: 'about', label: 'Story' },
     { id: 'gallery', label: 'Memories' },
     { id: 'registration', label: 'RSVP' },
-    { id: 'memory-card', label: 'Star ID Card' },
+    { id: 'message-wall', label: 'Wall' },
+    { id: 'whatsapp', label: 'WhatsApp' },
   ];
 
   return (
@@ -112,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onNavigateTo }) => 
                   onNavigateTo(link.id);
                 }}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  link.id === 'memory-card'
+                  link.id === 'registration'
                     ? 'bg-[#E9B95B]/20 text-[#594337] border border-[#E9B95B] hover:bg-[#E9B95B]/30 font-black'
                     : 'text-[#594337] hover:text-[#E9B95B] hover:bg-[#FFF5E8]'
                 }`}
@@ -200,7 +201,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onNavigateTo }) => 
                     setMobileMenuOpen(false);
                   }}
                   className={`p-3 rounded-2xl text-left text-xs font-bold transition flex items-center space-x-2 ${
-                    link.id === 'memory-card'
+                    link.id === 'registration'
                       ? 'bg-[#E9B95B]/20 text-[#594337] border border-[#E9B95B] col-span-2 font-black'
                       : 'clay-surface-cream text-[#594337] hover:border-[#E9B95B]'
                   }`}
