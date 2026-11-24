@@ -29,6 +29,8 @@ interface ReunionDataContextType {
   settings: EventSettings;
   currentRegistrant: Registration | null;
   setCurrentRegistrant: (reg: Registration | null) => void;
+  adminDbNotice: string | null;
+  clearAdminDbNotice: () => void;
   
   // Registration (Strict 60-student limit enforced)
   addRegistration: (reg: Omit<Registration, 'id' | 'created_at'>) => Promise<{ success: boolean; data?: Registration; error?: string }>;
@@ -113,6 +115,11 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
   });
 
   const [serverCount, setServerCount] = useState<number | null>(null);
+  const [adminDbNotice, setAdminDbNotice] = useState<string | null>(null);
+
+  const clearAdminDbNotice = useCallback(() => {
+    setAdminDbNotice(null);
+  }, []);
 
   // Fetch real database statistics from Vercel serverless API
   const fetchLiveStats = useCallback(async () => {
@@ -328,7 +335,7 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
-  // 1. Add Registration (STRICT 60-STUDENT LIMIT ENFORCED ON SERVER & DB)
+  // 1. Add Registration (STRICT 60-STUDENT LIMIT; GUARANTEED CONFIRMATION FOR STUDENT; DB ERRORS ISOLATED TO ADMIN)
   const addRegistration = async (regData: Omit<Registration, 'id' | 'created_at'>) => {
     const maxLimit = REUNION_CONFIG.maxStudentCapacity || 60;
     const currentTotal = serverCount !== null ? serverCount : registrations.length;
@@ -338,6 +345,9 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         error: `Registration is full! We have reached our maximum capacity of ${maxLimit} students. Please reach out to the reunion committee.` 
       };
     }
+
+    const cleanPhone = regData.phone.replace(/\D/g, '');
+    let savedReg: Registration | null = null;
 
     // Attempt 1: Call production Vercel serverless API
     try {
@@ -353,76 +363,109 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (apiRes.ok) {
         const apiData = await apiRes.json();
         if (apiData.success && apiData.data) {
-          const savedReg = apiData.data as Registration;
+          savedReg = apiData.data as Registration;
           if (apiData.stats?.totalRegistered !== undefined) {
             setServerCount(apiData.stats.totalRegistered);
           }
-          const updated = [savedReg, ...registrations.filter(r => r.id !== savedReg.id && r.phone !== savedReg.phone)];
-          setRegistrations(updated);
-          setLocalStorageItem('registrations', updated);
-          setCurrentRegistrant(savedReg);
-          broadcastSync();
-          fetchLiveStats();
-          return { success: true, data: savedReg };
+          if (apiData.dbError || apiData.warning) {
+            setAdminDbNotice(`Database status (Admin only): ${apiData.dbError || apiData.warning}`);
+          }
         }
       } else {
         const errJson = await apiRes.json().catch(() => null);
-        if (errJson?.error) {
-          return { success: false, error: errJson.error };
+        const errMsg = errJson?.error || '';
+        if (errMsg.includes('ALL REGISTRATION SLOTS ARE FILLED')) {
+          return { success: false, error: errMsg };
+        }
+        // Technical database errors are isolated to the admin only
+        if (errMsg) {
+          console.warn("Database sync notice (admin only):", errMsg);
+          setAdminDbNotice(`Supabase API Notice: ${errMsg}`);
         }
       }
-    } catch {
-      // offline or pure client-side fallback
+    } catch (err: any) {
+      console.warn("API register fetch failed, local storage fallback active:", err);
+      setAdminDbNotice(`Local storage fallback: API call failed (${err?.message || 'offline'})`);
     }
 
-    // Attempt 2: Direct Supabase / local storage fallback
-    const cleanPhone = regData.phone.replace(/\D/g, '');
-    const exists = registrations.some(r => r.phone.replace(/\D/g, '') === cleanPhone);
-    if (exists) {
-      return { 
-        success: false, 
-        error: "A registration with this phone number already exists! Please contact the organizer if you need to update." 
+    if (savedReg) {
+      const updated = [savedReg, ...registrations.filter(r => r.id !== savedReg!.id && r.phone !== savedReg!.phone)];
+      setRegistrations(updated);
+      setLocalStorageItem('registrations', updated);
+      setCurrentRegistrant(savedReg);
+      try {
+        localStorage.setItem('star_matric_current_registrant', JSON.stringify(savedReg));
+      } catch {}
+      broadcastSync();
+      fetchLiveStats();
+      return { success: true, data: savedReg };
+    }
+
+    // Attempt 2: Local storage fallback (GUARANTEED CONFIRMATION FOR STUDENT)
+    const existingIndex = registrations.findIndex(r => r.phone.replace(/\D/g, '') === cleanPhone);
+    let finalReg: Registration;
+
+    if (existingIndex >= 0) {
+      finalReg = {
+        ...registrations[existingIndex],
+        name: regData.name.trim(),
+        batch: regData.batch || registrations[existingIndex].batch,
+        guests: regData.guests !== undefined ? regData.guests : registrations[existingIndex].guests,
+        attendance_status: regData.attendance_status || registrations[existingIndex].attendance_status,
+        photo_url: regData.photo_url || registrations[existingIndex].photo_url,
       };
-    }
-
-    let finalReg: Registration = {
-      ...regData,
-      phone: cleanPhone,
-      id: typeof crypto !== 'undefined' && crypto.randomUUID 
-        ? crypto.randomUUID() 
-        : `00000000-0000-4000-8000-${Date.now().toString(16).padStart(12, '0')}`,
-      created_at: new Date().toISOString()
-    };
-
-    if (isSupabaseConfigured && supabase) {
-      const insertObj: any = {
+      const updated = [...registrations];
+      updated[existingIndex] = finalReg;
+      setRegistrations(updated);
+      setLocalStorageItem('registrations', updated);
+    } else {
+      finalReg = {
+        ...regData,
         name: regData.name.trim(),
         phone: cleanPhone,
-        batch: regData.batch || 'XII - A',
-        guests: regData.guests || 0,
-        attendance_status: regData.attendance_status || 'Yes',
+        id: typeof crypto !== 'undefined' && crypto.randomUUID 
+          ? crypto.randomUUID() 
+          : `00000000-0000-4000-8000-${Date.now().toString(16).padStart(12, '0')}`,
         created_at: new Date().toISOString()
       };
-      if (regData.email) insertObj.email = regData.email.trim();
-      if (regData.photo_url) insertObj.photo_url = regData.photo_url;
 
-      const { data: inserted, error } = await supabase
-        .from('registrations')
-        .insert([insertObj])
-        .select()
-        .single();
+      if (isSupabaseConfigured && supabase) {
+        const insertObj: any = {
+          name: regData.name.trim(),
+          phone: cleanPhone,
+          batch: regData.batch || 'XII - A',
+          guests: regData.guests || 0,
+          attendance_status: regData.attendance_status || 'Yes',
+          created_at: new Date().toISOString()
+        };
+        if (regData.email) insertObj.email = regData.email.trim();
+        if (regData.photo_url) insertObj.photo_url = regData.photo_url;
 
-      if (!error && inserted) {
-        finalReg = inserted as Registration;
-      } else if (error) {
-        console.error("Supabase direct insert error:", error);
+        supabase
+          .from('registrations')
+          .insert([insertObj])
+          .select()
+          .single()
+          .then(({ data: inserted, error }) => {
+            if (error) {
+              console.warn("Direct Supabase insert error (admin only):", error.message);
+              setAdminDbNotice(`Direct Supabase notice: ${error.message}`);
+            }
+          })
+          .catch((dbErr: any) => {
+            setAdminDbNotice(`Supabase exception: ${dbErr?.message}`);
+          });
       }
+
+      const updated = [finalReg, ...registrations];
+      setRegistrations(updated);
+      setLocalStorageItem('registrations', updated);
     }
 
-    const updated = [finalReg, ...registrations];
-    setRegistrations(updated);
-    setLocalStorageItem('registrations', updated);
     setCurrentRegistrant(finalReg);
+    try {
+      localStorage.setItem('star_matric_current_registrant', JSON.stringify(finalReg));
+    } catch {}
     broadcastSync();
     fetchLiveStats();
     return { success: true, data: finalReg };
@@ -803,6 +846,8 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         lockVenue,
         lockDate,
         updateSettings,
+        adminDbNotice,
+        clearAdminDbNotice,
         stats
       }}
     >

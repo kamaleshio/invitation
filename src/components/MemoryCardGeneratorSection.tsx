@@ -71,37 +71,42 @@ export const MemoryCardGeneratorSection: React.FC<MemoryCardGeneratorProps> = ({
   const [isViewModalOpen, setIsViewModalOpen] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [templateImg, setTemplateImg] = useState<HTMLImageElement | null>(null);
 
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const idCardTemplateImgRef = useRef<HTMLImageElement | null>(null);
 
-  // Preload master blank ID card template image
+  // Preload master blank ID card template image across all valid public paths
   useEffect(() => {
     let isMounted = true;
-    const idImg = new Image();
-    idImg.crossOrigin = "anonymous";
-    idImg.onload = () => {
-      if (!isMounted) return;
-      idCardTemplateImgRef.current = idImg;
-      if (previewCanvasRef.current) {
-        renderCardToCanvas(previewCanvasRef.current, false);
+    const candidates = [
+      '/star-id-card-template.jpg',
+      '/images/star-school-id-template.png',
+      '/images/star-id-card-template.jpg',
+      'star-id-card-template.jpg'
+    ];
+
+    let candidateIdx = 0;
+    const loadNext = () => {
+      if (candidateIdx >= candidates.length || !isMounted) return;
+      const src = candidates[candidateIdx++];
+      const img = new Image();
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        img.crossOrigin = 'anonymous';
       }
-    };
-    idImg.onerror = () => {
-      // Fallback path
-      const fallbackImg = new Image();
-      fallbackImg.crossOrigin = "anonymous";
-      fallbackImg.onload = () => {
+      img.onload = () => {
         if (!isMounted) return;
-        idCardTemplateImgRef.current = fallbackImg;
-        if (previewCanvasRef.current) {
-          renderCardToCanvas(previewCanvasRef.current, false);
-        }
+        idCardTemplateImgRef.current = img;
+        setTemplateImg(img);
       };
-      fallbackImg.src = "/star-id-card-template.jpg";
+      img.onerror = () => {
+        loadNext();
+      };
+      img.src = src;
     };
-    idImg.src = "/images/star-school-id-template.png";
+
+    loadNext();
 
     return () => { isMounted = false; };
   }, []);
@@ -252,16 +257,73 @@ export const MemoryCardGeneratorSection: React.FC<MemoryCardGeneratorProps> = ({
     canvas.width = width;
     canvas.height = height;
 
-    // 1. Draw original ID card template as master background
-    if (idCardTemplateImgRef.current && idCardTemplateImgRef.current.complete && idCardTemplateImgRef.current.naturalWidth > 0) {
-      ctx.drawImage(idCardTemplateImgRef.current, 0, 0, width, height);
+    const activeTemplate = (templateImg && templateImg.complete && templateImg.naturalWidth > 0)
+      ? templateImg
+      : (idCardTemplateImgRef.current && idCardTemplateImgRef.current.complete && idCardTemplateImgRef.current.naturalWidth > 0)
+        ? idCardTemplateImgRef.current
+        : null;
+
+    // 1. Draw original ID card template or authentic vector replica
+    if (activeTemplate) {
+      ctx.drawImage(activeTemplate, 0, 0, width, height);
     } else {
-      const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-      bgGrad.addColorStop(0, '#FFFFFF');
-      bgGrad.addColorStop(0.5, '#FFF7D6');
-      bgGrad.addColorStop(1, '#FFEB85');
-      ctx.fillStyle = bgGrad;
+      // High-Fidelity Vector Star Matric School ID Card Fallback
+      ctx.fillStyle = '#FFFDF0';
       ctx.fillRect(0, 0, width, height);
+
+      // Deep Red School Borders
+      ctx.strokeStyle = '#B91C1C';
+      ctx.lineWidth = 12;
+      ctx.strokeRect(6, 6, width - 12, height - 12);
+
+      // Top Red School Header Banner
+      ctx.fillStyle = '#991B1B';
+      ctx.fillRect(12, 12, width - 24, 150);
+
+      // School Name
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 36px "Outfit", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('STAR MATRIC HR. SEC. SCHOOL', width / 2, 72);
+
+      ctx.font = '700 20px "Outfit", Arial, sans-serif';
+      ctx.fillStyle = '#FDE68A';
+      ctx.fillText('KARUR - 639 005', width / 2, 108);
+
+      ctx.font = '800 18px "Outfit", Arial, sans-serif';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('STUDENT IDENTITY CARD', width / 2, 138);
+
+      // Labels on Body
+      ctx.fillStyle = '#991B1B';
+      ctx.font = '900 24px "Outfit", Arial, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('NAME :', 150, 663);
+      ctx.fillText('STD  :', 150, 733);
+
+      // Dotted underline
+      ctx.strokeStyle = '#D1D5DB';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(250, 670);
+      ctx.lineTo(620, 670);
+      ctx.moveTo(250, 740);
+      ctx.lineTo(620, 740);
+      ctx.stroke();
+
+      // Signature line
+      ctx.fillStyle = '#594337';
+      ctx.font = '700 16px "Outfit", Arial, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('Principal / Headmaster', width - 80, 920);
+
+      // Bottom Red Ribbon
+      ctx.fillStyle = '#991B1B';
+      ctx.fillRect(12, height - 55, width - 24, 43);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '700 16px "Outfit", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Ph: 04324-222444  •  E-mail: starmatricschool@gmail.com', width / 2, height - 28);
     }
 
     // 2. Exact Photo Frame Coordinates from original blank ID template:
@@ -318,7 +380,7 @@ export const MemoryCardGeneratorSection: React.FC<MemoryCardGeneratorProps> = ({
 
     // 3. Exact Text Placement:
     // Student Name on "Name :" line (x: 285, y: 663)
-    ctx.fillStyle = '#1A1A1A';
+    ctx.fillStyle = '#111827';
     ctx.font = '900 24px "Outfit", "Segoe UI", Arial, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
@@ -328,7 +390,7 @@ export const MemoryCardGeneratorSection: React.FC<MemoryCardGeneratorProps> = ({
     }
 
     // Student Standard on "Std :" line (x: 290, y: 733)
-    ctx.fillStyle = '#1A1A1A';
+    ctx.fillStyle = '#111827';
     ctx.font = '800 23px "Outfit", "Segoe UI", Arial, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
@@ -337,7 +399,7 @@ export const MemoryCardGeneratorSection: React.FC<MemoryCardGeneratorProps> = ({
       ctx.fillText(cleanBatch.toUpperCase(), 290, 733);
     }
 
-  }, [studentName, studentBatch, photoImg, zoom, panX, panY]);
+  }, [studentName, studentBatch, photoImg, zoom, panX, panY, templateImg]);
 
   // Redraw Preview Canvas on state changes
   useEffect(() => {
@@ -358,11 +420,17 @@ export const MemoryCardGeneratorSection: React.FC<MemoryCardGeneratorProps> = ({
     sound.playCelebration();
 
     try {
-      // Ensure master ID card template image is loaded
-      if (idCardTemplateImgRef.current && !idCardTemplateImgRef.current.complete) {
-        await new Promise((resolve) => {
-          if (idCardTemplateImgRef.current) idCardTemplateImgRef.current.onload = resolve;
-          else resolve(null);
+      // Ensure master ID card template image is loaded if not already in state
+      if (!templateImg || !templateImg.complete || templateImg.naturalWidth === 0) {
+        await new Promise<void>((resolve) => {
+          const testImg = new Image();
+          testImg.onload = () => {
+            idCardTemplateImgRef.current = testImg;
+            setTemplateImg(testImg);
+            resolve();
+          };
+          testImg.onerror = () => resolve();
+          testImg.src = '/star-id-card-template.jpg';
         });
       }
 

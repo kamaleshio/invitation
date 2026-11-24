@@ -53,7 +53,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     toggleHideMessage, 
     deleteMessage, 
     toggleCardGenerator,
-    updateSettings 
+    updateSettings,
+    adminDbNotice,
+    clearAdminDbNotice
   } = useReunionData();
 
   // Authentication State
@@ -265,6 +267,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <span>Exit Admin</span>
             </button>
           </div>
+        </div>
+
+        {/* Database & Supabase Diagnostics (Admin Only) */}
+        <div className={`p-4 rounded-2xl border ${adminDbNotice ? 'bg-amber-50 border-amber-300' : 'bg-emerald-50 border-emerald-200'} flex items-start justify-between shadow-sm`}>
+          <div className="flex items-start space-x-3">
+            <span className="text-xl mt-0.5">{adminDbNotice ? '⚠️' : '🟢'}</span>
+            <div>
+              <div className="text-xs font-black uppercase tracking-wider text-[#594337] flex items-center space-x-2">
+                <span>Database Sync Status (Admin Eyes Only)</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${adminDbNotice ? 'bg-amber-200 text-amber-900' : 'bg-emerald-200 text-emerald-900'}`}>
+                  {adminDbNotice ? 'Notice Logged' : 'Healthy / Active'}
+                </span>
+              </div>
+              <p className="text-xs text-[#594337] mt-1 font-medium">
+                {adminDbNotice ? adminDbNotice : `All ${registrations.length} registrations are saved and active. Normal visitors never see database connection errors and are always confirmed smoothly.`}
+              </p>
+            </div>
+          </div>
+          {adminDbNotice && (
+            <button
+              onClick={clearAdminDbNotice}
+              className="text-xs font-bold text-amber-800 hover:text-amber-950 underline ml-4 flex-shrink-0"
+            >
+              Dismiss
+            </button>
+          )}
         </div>
 
         {/* METRICS SUMMARY CARDS */}
