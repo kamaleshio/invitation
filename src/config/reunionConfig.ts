@@ -53,8 +53,8 @@ export const REUNION_CONFIG = {
   organizerName: "Reunion Organizing Committee",
   
   // Confirmed Restaurant / Venue
-  confirmedVenueName: "Habbi Mandi Karur",
-  confirmedVenueDescription: "Confirmed venue for our grand reunion feast & celebrations at Habbi Mandi, Karur",
+  confirmedVenueName: "Habibi Mandi Karur",
+  confirmedVenueDescription: "Confirmed venue for our grand reunion feast & celebrations at Habibi Mandi, Karur",
 
   // Inquiries / Doubts Helpline Number
   contactPhone: "8838082883",

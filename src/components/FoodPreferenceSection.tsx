@@ -57,7 +57,7 @@ export const FoodPreferenceSection: React.FC = () => {
           <span className="text-[#E9B95B] font-kalam text-4xl sm:text-6xl block mb-1">
             "Biryani is Waiting!"
           </span>
-          Feast at Habbi Mandi Karur
+          Feast at Habibi Mandi Karur
         </h2>
 
         <p className="text-sm sm:text-base text-[#927B6C] max-w-xl mx-auto leading-relaxed font-semibold">
