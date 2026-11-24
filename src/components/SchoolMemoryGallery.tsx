@@ -57,7 +57,7 @@ export const SchoolMemoryGallery: React.FC = () => {
   }, [selectedPhoto, selectedIndex, filteredPhotos]);
 
   return (
-    <section id="gallery" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10">
+    <section id="gallery" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 w-full overflow-hidden">
       {/* Section Header */}
       <div className="text-center space-y-3 max-w-3xl mx-auto">
         <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full clay-pill bg-[#FFFFFF] text-[#594337] text-xs font-bold uppercase tracking-wider border border-[#F0E1CE]">

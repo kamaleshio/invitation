@@ -61,7 +61,7 @@ export const MessageWallSection: React.FC = () => {
   const visibleMessages = wallMessages.filter(m => !m.hidden);
 
   return (
-    <section id="message-wall" className="py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12 relative">
+    <section id="message-wall" className="py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12 relative w-full overflow-hidden">
       {/* Background glow */}
       <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-80 h-80 bg-[#E9B95B]/10 rounded-full blur-[110px] pointer-events-none -z-10" />
 

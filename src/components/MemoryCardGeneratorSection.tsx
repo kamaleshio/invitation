@@ -450,7 +450,7 @@ export const MemoryCardGeneratorSection: React.FC<MemoryCardGeneratorProps> = ({
   };
 
   return (
-    <section id="memory-card" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 relative">
+    <section id="memory-card" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 relative w-full overflow-hidden">
       {/* Decorative background glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#E9B95B]/10 rounded-full blur-[100px] pointer-events-none -z-10" />
 

@@ -91,7 +91,7 @@ export const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF5E8] text-[#594337] relative selection:bg-[#E9B95B] selection:text-[#413027] warm-grid-bg">
+    <div className="min-h-screen max-w-full overflow-x-hidden bg-[#FFF5E8] text-[#594337] relative selection:bg-[#E9B95B] selection:text-[#413027] warm-grid-bg">
       {/* Heart & Star Cursor Trail for desktop */}
       <HeartCursorTrail />
 
@@ -99,7 +99,7 @@ export const AppContent: React.FC = () => {
       <BranchingNodeNetwork />
 
       {/* Ambient Floating Liquid Glass Elements (Inspired by Reference UI) */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-0">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden max-w-full -z-0">
         {/* Soft Golden & Champagne Glow Orbs */}
         <div className="absolute top-[15%] left-[5%] w-[420px] h-[420px] rounded-full bg-[#E9B95B]/15 blur-[120px]" />
         <div className="absolute top-[45%] right-[5%] w-[480px] h-[480px] rounded-full bg-[#F6C9A8]/20 blur-[140px]" />
@@ -116,7 +116,7 @@ export const AppContent: React.FC = () => {
         <motion.div
           animate={{ y: [0, 16, 0], rotate: [12, 15, 12] }}
           transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[22%] right-[-20px] sm:right-[3%] w-52 sm:w-64 h-36 sm:h-44 liquid-glass-slate p-3 hidden md:block"
+          className="absolute top-[22%] right-2 sm:right-[3%] w-52 sm:w-64 h-36 sm:h-44 liquid-glass-slate p-3 hidden md:block"
         >
           {/* Internal Metallic Sweep Line */}
           <div className="w-full h-full rounded-2xl relative overflow-hidden border border-white/50">
@@ -135,7 +135,7 @@ export const AppContent: React.FC = () => {
         <motion.div
           animate={{ y: [0, -20, 0], rotate: [-10, -7, -10] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          className="absolute top-[58%] left-[-15px] sm:left-[2%] w-48 sm:w-60 h-32 sm:h-40 liquid-glass-slate p-3 hidden md:block"
+          className="absolute top-[58%] left-2 sm:left-[2%] w-48 sm:w-60 h-32 sm:h-40 liquid-glass-slate p-3 hidden md:block"
         >
           <div className="w-full h-full rounded-2xl relative overflow-hidden border border-white/50">
             <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#E9B95B] to-transparent shadow-[0_0_8px_rgba(233,185,91,0.8)] rotate-6" />
@@ -151,7 +151,7 @@ export const AppContent: React.FC = () => {
       </div>
 
       {/* CONTINUOUS SCROLL-DRIVEN ARCHITECTURE (NO NEXT BUTTON, SMOOTH REVERSE SCROLL) */}
-      <div className="flex flex-col min-h-screen relative">
+      <div className="flex flex-col min-h-screen relative w-full max-w-full overflow-x-hidden">
         
         {/* 1. 3D Invitation Chamber Hero at Top */}
         <OpeningScene onScrollToHomepage={() => handleNavigateToSection('countdown-hero')} />

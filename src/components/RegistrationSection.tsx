@@ -192,7 +192,7 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
   const capacityPercent = Math.min(100, Math.round((stats.totalRegistrations / 60) * 100));
 
   return (
-    <section id="registration" className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-10">
+    <section id="registration" className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-10 w-full overflow-hidden">
       {/* Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full clay-pill bg-[#FFFFFF] text-[#594337] text-xs font-bold uppercase tracking-wider border border-[#F0E1CE]">

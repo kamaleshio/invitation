@@ -5,7 +5,7 @@ import { REUNION_CONFIG } from '../config/reunionConfig';
 
 export const AboutSection: React.FC = () => {
   return (
-    <section id="about" className="py-16 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+    <section id="about" className="py-16 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full overflow-hidden">
       <div className="clay-panel p-8 sm:p-14 bg-[#FFFDF9] border-2 border-[#F0E1CE] relative overflow-hidden space-y-10 shadow-xl">
         
         {/* Subtle Decorative Stars */}

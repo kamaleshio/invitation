@@ -33,7 +33,7 @@ export const WhatsAppSection: React.FC = () => {
   };
 
   return (
-    <section id="whatsapp" className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center relative">
+    <section id="whatsapp" className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center relative w-full overflow-hidden">
       {/* Background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#E9B95B]/10 rounded-full blur-[100px] pointer-events-none -z-10" />
 

@@ -8,7 +8,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
   return (
-    <footer className="border-t border-[#F0E1CE] bg-[#FFF5E8] py-16 px-4 sm:px-6 lg:px-8 text-center text-[#927B6C] text-xs">
+    <footer className="border-t border-[#F0E1CE] bg-[#FFF5E8] py-16 px-4 sm:px-6 lg:px-8 text-center text-[#927B6C] text-xs w-full overflow-hidden">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-center space-x-2">
           <span className="text-2xl">🎓</span>

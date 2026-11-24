@@ -44,12 +44,12 @@ export const BranchingNodeNetwork: React.FC = () => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     let animId: number;
-    let width = window.innerWidth;
+    let width = document.documentElement.clientWidth || window.innerWidth;
     let height = window.innerHeight;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     const handleResize = () => {
-      width = window.innerWidth;
+      width = document.documentElement.clientWidth || window.innerWidth;
       height = window.innerHeight;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
@@ -406,7 +406,7 @@ export const BranchingNodeNetwork: React.FC = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none -z-0 select-none"
+      className="fixed inset-0 pointer-events-none -z-0 select-none max-w-full overflow-hidden"
       style={{ opacity: 0.92 }}
     />
   );

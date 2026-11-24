@@ -101,7 +101,7 @@ export const CountdownSection: React.FC<CountdownSectionProps> = ({
   ];
 
   return (
-    <section id="countdown" className="pt-8 pb-16 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+    <section id="countdown" className="pt-8 pb-16 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full overflow-hidden">
       {/* Main Hero Clay / Warm Panel */}
       <div className="clay-panel p-8 sm:p-14 border-2 border-[#F0E1CE] bg-[#FFFDF9] text-center space-y-10 relative overflow-hidden shadow-xl">
         

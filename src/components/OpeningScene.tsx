@@ -75,7 +75,7 @@ export const OpeningScene: React.FC<OpeningSceneProps> = ({ onScrollToHomepage }
     <section 
       ref={containerRef}
       id="invitation-hero"
-      className="relative min-h-[230vh] w-full select-none"
+      className="relative min-h-[230vh] w-full max-w-full overflow-hidden select-none"
     >
       {/* STICKY VIEWPORT CONTAINER */}
       <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden px-4">
