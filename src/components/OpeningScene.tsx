@@ -19,22 +19,24 @@ export const OpeningScene: React.FC<OpeningSceneProps> = ({ onScrollToHomepage }
     offset: ["start start", "end end"]
   });
 
-  // 1. Envelope Flap opens smoothly on initial scroll (0 -> 0.25)
-  const flapRotateX = useTransform(scrollYProgress, [0, 0.22], [0, 180]);
-  const flapZIndex = useTransform(scrollYProgress, [0, 0.11, 0.12, 1], [35, 35, 5, 5]);
-  const sealOpacity = useTransform(scrollYProgress, [0, 0.14], [1, 0]);
+  // 1. Envelope Flap opens smoothly on initial scroll (0 -> 0.16)
+  const flapRotateX = useTransform(scrollYProgress, [0, 0.16], [0, 180]);
+  const flapZIndex = useTransform(scrollYProgress, [0, 0.08, 0.09, 1], [35, 35, 5, 5]);
+  const sealOpacity = useTransform(scrollYProgress, [0, 0.10], [1, 0]);
 
-  // 2. Letter emerges completely from envelope (0.18 -> 0.65)
-  // Letter moves upward by -290px while envelope base moves downward by +70px
-  // Total separation of 360px guarantees the entire letter is 100% visible and unclipped
-  const letterY = useTransform(scrollYProgress, [0.18, 0.65], [0, -290]);
-  const letterScale = useTransform(scrollYProgress, [0.18, 0.65], [0.94, 1.04]);
-  const envelopeY = useTransform(scrollYProgress, [0.18, 0.65], [0, 70]);
+  // 2. Letter emerges completely from envelope (0.14 -> 0.48)
+  // Letter moves upward by -290px while envelope base moves downward by +75px
+  // By 0.48, the letter is 100% FULLY OUT of the envelope.
+  // From 0.48 to 0.85, the letter stays FULLY OUT and locked in place so the visitor can read it comfortably.
+  // Only after 0.85 does it move to the next section (homepage).
+  const letterY = useTransform(scrollYProgress, [0.14, 0.48, 0.85, 1.0], [0, -290, -290, -320]);
+  const letterScale = useTransform(scrollYProgress, [0.14, 0.48, 0.85, 1.0], [0.94, 1.04, 1.04, 1.0]);
+  const envelopeY = useTransform(scrollYProgress, [0.14, 0.48, 0.85, 1.0], [0, 75, 75, 90]);
 
   // 3. Subtle prompt indicators
-  const initialPromptOpacity = useTransform(scrollYProgress, [0, 0.10], [1, 0]);
-  const letterPromptOpacity = useTransform(scrollYProgress, [0.45, 0.65, 0.95], [0, 1, 0.3]);
-  const sceneOpacity = useTransform(scrollYProgress, [0.85, 1.0], [1, 0.7]);
+  const initialPromptOpacity = useTransform(scrollYProgress, [0, 0.08], [1, 0]);
+  const letterPromptOpacity = useTransform(scrollYProgress, [0.42, 0.50, 0.85, 0.95], [0, 1, 1, 0]);
+  const sceneOpacity = useTransform(scrollYProgress, [0.86, 1.0], [1, 0.75]);
 
   // Trigger soft background music once user starts scrolling
   useEffect(() => {
@@ -75,7 +77,7 @@ export const OpeningScene: React.FC<OpeningSceneProps> = ({ onScrollToHomepage }
     <section 
       ref={containerRef}
       id="invitation-hero"
-      className="relative min-h-[230vh] w-full max-w-full overflow-hidden select-none"
+      className="relative min-h-[280vh] w-full max-w-full overflow-hidden select-none"
     >
       {/* STICKY VIEWPORT CONTAINER */}
       <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden px-4">
@@ -265,10 +267,10 @@ export const OpeningScene: React.FC<OpeningSceneProps> = ({ onScrollToHomepage }
             <motion.div
               style={{ opacity: letterPromptOpacity }}
               onClick={handleScrollToContent}
-              className="cursor-pointer inline-flex flex-col items-center space-y-1 py-1 px-4 rounded-xl clay-pill hover:border-[#E9B95B] transition"
+              className="cursor-pointer inline-flex flex-col items-center space-y-1 py-1.5 px-5 rounded-xl clay-pill hover:border-[#E9B95B] shadow-md transition"
             >
-              <span className="text-xs font-black uppercase tracking-wider text-[#594337] flex items-center space-x-1">
-                <span>Continue scrolling to enter reunion</span>
+              <span className="text-xs font-black uppercase tracking-wider text-[#594337] flex items-center space-x-1.5">
+                <span>Invitation Opened • Scroll to enter reunion</span>
                 <span className="text-[#E9B95B]">↓</span>
               </span>
               <motion.div
