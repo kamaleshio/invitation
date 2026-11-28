@@ -23,7 +23,8 @@ import {
   X,
   AlertTriangle,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  RefreshCw
 } from 'lucide-react';
 import { useReunionData } from '../../context/ReunionDataContext';
 import { REUNION_CONFIG } from '../../config/reunionConfig';
@@ -55,7 +56,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     toggleCardGenerator,
     updateSettings,
     adminDbNotice,
-    clearAdminDbNotice
+    clearAdminDbNotice,
+    refreshRegistrations,
+    isLoadingRegistrations,
+    registrationsError
   } = useReunionData();
 
   // Authentication State
@@ -68,10 +72,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Yes' | 'Maybe' | 'No'>('All');
 
+  // Pagination State for Users Table
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
   // Edit Registration Modal State
   const [editingReg, setEditingReg] = useState<Registration | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [viewPhotoUrl, setViewPhotoUrl] = useState<string | null>(null);
+
+  // Auto-fetch fresh database records when admin logs in
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      refreshRegistrations();
+    }
+  }, [isAuthenticated, refreshRegistrations]);
+
+  // Reset page to 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
 
   // Announcement edit
   const [announcementNotes, setAnnouncementNotes] = useState(settings.announcement_notes || '');
@@ -160,14 +180,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     }
   };
 
-  // Filtered Attendees
+  // Filtered Attendees (search across name, phone, email, and batch)
   const filteredRegistrations = registrations.filter(r => {
-    const matchesQuery = r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         r.phone.includes(searchQuery) ||
-                         r.batch.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase().trim();
+    const matchesQuery = !q ||
+                         r.name.toLowerCase().includes(q) ||
+                         r.phone.includes(q) ||
+                         (r.email && r.email.toLowerCase().includes(q)) ||
+                         r.batch.toLowerCase().includes(q);
     const matchesStatus = statusFilter === 'All' || r.attendance_status === statusFilter;
     return matchesQuery && matchesStatus;
   });
+
+  const totalPages = Math.ceil(filteredRegistrations.length / pageSize) || 1;
+  const paginatedRegistrations = filteredRegistrations.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   // ================= ADMIN LOGIN SCREEN (PHASE 13) =================
   if (!isAuthenticated) {
@@ -387,6 +416,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     {s}
                   </button>
                 ))}
+                <button
+                  onClick={() => {
+                    sound.playPop();
+                    refreshRegistrations();
+                  }}
+                  disabled={isLoadingRegistrations}
+                  title="Sync latest registered users from database"
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white text-[#594337] border border-[#F0E1CE] hover:bg-[#FFF5E8] flex items-center space-x-1.5 transition disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingRegistrations ? 'animate-spin text-[#D4A343]' : 'text-[#8E725B]'}`} />
+                  <span>{isLoadingRegistrations ? 'Syncing...' : 'Sync DB'}</span>
+                </button>
                 {registrations.length > 0 && (
                   <button
                     onClick={handleClearAllRegistrations}
@@ -400,6 +441,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               </div>
             </div>
 
+            {/* Error banner if database fetch failed */}
+            {registrationsError && (
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-xs font-medium flex items-center justify-between">
+                <span>{registrationsError}</span>
+                <button
+                  onClick={() => refreshRegistrations()}
+                  className="underline font-bold hover:text-amber-900 ml-2"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
             {/* Table */}
             <div className="overflow-x-auto rounded-2xl border border-[#F0E1CE]">
               <table className="w-full text-left text-xs">
@@ -407,8 +461,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                   <tr>
                     <th className="p-3.5">Photo</th>
                     <th className="p-3.5">Name</th>
+                    <th className="p-3.5">Email</th>
                     <th className="p-3.5">Mobile</th>
                     <th className="p-3.5">Standard / Batch</th>
+                    <th className="p-3.5">Role</th>
                     <th className="p-3.5">Guests</th>
                     <th className="p-3.5">Status</th>
                     <th className="p-3.5">Registered At</th>
@@ -416,14 +472,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F0E1CE] font-medium text-[#594337]">
-                  {filteredRegistrations.length === 0 ? (
+                  {isLoadingRegistrations && registrations.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-6 text-center text-[#8E725B]">
-                        No registrations match your search criteria.
+                      <td colSpan={10} className="p-8 text-center text-[#8E725B]">
+                        <div className="flex items-center justify-center space-x-2">
+                          <RefreshCw className="w-4 h-4 animate-spin text-[#D4A343]" />
+                          <span>Loading registered users from database...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredRegistrations.length === 0 ? (
+                    <tr>
+                      <td colSpan={10} className="p-6 text-center text-[#8E725B]">
+                        {searchQuery || statusFilter !== 'All' 
+                          ? 'No registrations match your search criteria.' 
+                          : 'No registered users found in the database.'}
                       </td>
                     </tr>
                   ) : (
-                    filteredRegistrations.map((r) => (
+                    paginatedRegistrations.map((r) => (
                       <tr key={r.id} className="hover:bg-[#FFFDF9] transition">
                         <td className="p-3.5">
                           {r.photo_url ? (
@@ -441,8 +508,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                           )}
                         </td>
                         <td className="p-3.5 font-bold text-[#594337]">{r.name}</td>
+                        <td className="p-3.5">
+                          {r.email ? (
+                            <span className="font-mono text-[#8E725B] text-[11px]">{r.email}</span>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
                         <td className="p-3.5 font-mono text-[#8E725B]">{r.phone}</td>
                         <td className="p-3.5">{r.batch}</td>
+                        <td className="p-3.5">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFF5E8] text-[#594337] border border-[#F0E1CE]">
+                            {(r as any).role || 'Alumni'}
+                          </span>
+                        </td>
                         <td className="p-3.5 text-[#D4A343] font-bold">+{r.guests}</td>
                         <td className="p-3.5">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
@@ -454,7 +533,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                           </span>
                         </td>
                         <td className="p-3.5 text-[11px] text-[#8E725B]">
-                          {r.created_at ? new Date(r.created_at).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                          {r.created_at ? new Date(r.created_at).toLocaleString('en-IN', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                         </td>
                         <td className="p-3.5 text-right space-x-2">
                           <button
@@ -478,6 +557,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {filteredRegistrations.length > pageSize && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 px-1">
+                <span className="text-xs text-[#8E725B]">
+                  Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filteredRegistrations.length)} of {filteredRegistrations.length} registrations
+                </span>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-xl border border-[#F0E1CE] bg-white text-xs font-semibold text-[#594337] disabled:opacity-40 hover:bg-[#FFF5E8] transition"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xs font-bold text-[#594337] px-2">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-xl border border-[#F0E1CE] bg-white text-xs font-semibold text-[#594337] disabled:opacity-40 hover:bg-[#FFF5E8] transition"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -690,6 +797,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     type="text"
                     value={editingReg.phone}
                     onChange={(e) => setEditingReg({ ...editingReg, phone: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#F0E1CE] text-xs font-medium text-[#594337] focus:outline-none focus:border-[#E9B95B]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#8E725B] mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    value={editingReg.email || ''}
+                    placeholder="student@example.com"
+                    onChange={(e) => setEditingReg({ ...editingReg, email: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-white border border-[#F0E1CE] text-xs font-medium text-[#594337] focus:outline-none focus:border-[#E9B95B]"
                   />
                 </div>

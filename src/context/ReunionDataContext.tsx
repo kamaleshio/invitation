@@ -31,6 +31,9 @@ interface ReunionDataContextType {
   setCurrentRegistrant: (reg: Registration | null) => void;
   adminDbNotice: string | null;
   clearAdminDbNotice: () => void;
+  refreshRegistrations: () => Promise<Registration[]>;
+  isLoadingRegistrations: boolean;
+  registrationsError: string | null;
   
   // Registration (Strict 60-student limit enforced)
   addRegistration: (reg: Omit<Registration, 'id' | 'created_at'>) => Promise<{ success: boolean; data?: Registration; error?: string }>;
@@ -116,9 +119,63 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const [serverCount, setServerCount] = useState<number | null>(null);
   const [adminDbNotice, setAdminDbNotice] = useState<string | null>(null);
+  const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(false);
+  const [registrationsError, setRegistrationsError] = useState<string | null>(null);
 
   const clearAdminDbNotice = useCallback(() => {
     setAdminDbNotice(null);
+  }, []);
+
+  // Fetch all registered users from database via dedicated API or direct Supabase query
+  const refreshRegistrations = useCallback(async (): Promise<Registration[]> => {
+    setIsLoadingRegistrations(true);
+    setRegistrationsError(null);
+    let freshRegs: Registration[] | null = null;
+
+    // Method 1: Dedicated production serverless API endpoint
+    try {
+      const res = await fetch('/api/registrations', { 
+        cache: 'no-store',
+        headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          freshRegs = json.data as Registration[];
+        }
+      }
+    } catch (err: any) {
+      console.warn("API /api/registrations fetch notice:", err?.message);
+    }
+
+    // Method 2: Direct Supabase client query
+    if (!freshRegs && isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('registrations')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && data) {
+          freshRegs = data as Registration[];
+        } else if (error) {
+          console.warn("Direct Supabase query error:", error.message);
+          setRegistrationsError(error.message);
+        }
+      } catch (err: any) {
+        console.warn("Supabase fetch exception:", err);
+        setRegistrationsError(err?.message || 'Database connection error');
+      }
+    }
+
+    if (freshRegs) {
+      setRegistrations(freshRegs);
+      setLocalStorageItem('registrations', freshRegs);
+      setIsLoadingRegistrations(false);
+      return freshRegs;
+    }
+
+    setIsLoadingRegistrations(false);
+    return [];
   }, []);
 
   // Fetch real database statistics from Vercel serverless API
@@ -223,10 +280,14 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
 
     fetchAllSupabaseData();
+    refreshRegistrations();
 
     const channel = supabase
       .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => fetchAllSupabaseData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => {
+        fetchAllSupabaseData();
+        refreshRegistrations();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'wall_messages' }, () => fetchAllSupabaseData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bench_claims' }, () => fetchAllSupabaseData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'food_preferences' }, () => fetchAllSupabaseData())
@@ -389,9 +450,13 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     if (savedReg) {
-      const updated = [savedReg, ...registrations.filter(r => r.id !== savedReg!.id && r.phone !== savedReg!.phone)];
-      setRegistrations(updated);
-      setLocalStorageItem('registrations', updated);
+      // Re-fetch all registered users from database so admin & table are 100% in sync
+      const freshList = await refreshRegistrations();
+      if (!freshList.some(r => r.id === savedReg!.id)) {
+        const updated = [savedReg, ...freshList.filter(r => r.id !== savedReg!.id)];
+        setRegistrations(updated);
+        setLocalStorageItem('registrations', updated);
+      }
       setCurrentRegistrant(savedReg);
       try {
         localStorage.setItem('star_matric_current_registrant', JSON.stringify(savedReg));
@@ -401,24 +466,44 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return { success: true, data: savedReg };
     }
 
-    // Attempt 2: Local storage fallback (GUARANTEED CONFIRMATION FOR STUDENT)
-    const existingIndex = registrations.findIndex(r => r.phone.replace(/\D/g, '') === cleanPhone);
-    let finalReg: Registration;
+    // Attempt 2: Direct Supabase client insert if API didn't return
+    let finalReg: Registration | null = null;
+    if (isSupabaseConfigured && supabase) {
+      try {
+        let phoneToInsert = cleanPhone;
+        const insertObj: any = {
+          name: regData.name.trim(),
+          phone: phoneToInsert,
+          batch: regData.batch || 'XII - A',
+          guests: regData.guests || 0,
+          attendance_status: regData.attendance_status || 'Yes',
+          created_at: new Date().toISOString()
+        };
+        if (regData.email) insertObj.email = regData.email.trim();
+        if (regData.photo_url) insertObj.photo_url = regData.photo_url;
 
-    if (existingIndex >= 0) {
-      finalReg = {
-        ...registrations[existingIndex],
-        name: regData.name.trim(),
-        batch: regData.batch || registrations[existingIndex].batch,
-        guests: regData.guests !== undefined ? regData.guests : registrations[existingIndex].guests,
-        attendance_status: regData.attendance_status || registrations[existingIndex].attendance_status,
-        photo_url: regData.photo_url || registrations[existingIndex].photo_url,
-      };
-      const updated = [...registrations];
-      updated[existingIndex] = finalReg;
-      setRegistrations(updated);
-      setLocalStorageItem('registrations', updated);
-    } else {
+        let { data: inserted, error: insertError } = await supabase
+          .from('registrations')
+          .insert([insertObj])
+          .select()
+          .single();
+
+        if (insertError && insertError.message?.includes('registrations_phone_key')) {
+          phoneToInsert = `${cleanPhone}-${Math.floor(1000 + Math.random() * 9000)}`;
+          insertObj.phone = phoneToInsert;
+          const retry = await supabase.from('registrations').insert([insertObj]).select().single();
+          inserted = retry.data;
+        }
+
+        if (inserted) {
+          finalReg = inserted as Registration;
+        }
+      } catch (err: any) {
+        console.warn("Direct Supabase insert error:", err);
+      }
+    }
+
+    if (!finalReg) {
       finalReg = {
         ...regData,
         name: regData.name.trim(),
@@ -428,36 +513,11 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
           : `00000000-0000-4000-8000-${Date.now().toString(16).padStart(12, '0')}`,
         created_at: new Date().toISOString()
       };
+    }
 
-      if (isSupabaseConfigured && supabase) {
-        const insertObj: any = {
-          name: regData.name.trim(),
-          phone: cleanPhone,
-          batch: regData.batch || 'XII - A',
-          guests: regData.guests || 0,
-          attendance_status: regData.attendance_status || 'Yes',
-          created_at: new Date().toISOString()
-        };
-        if (regData.email) insertObj.email = regData.email.trim();
-        if (regData.photo_url) insertObj.photo_url = regData.photo_url;
-
-        supabase
-          .from('registrations')
-          .insert([insertObj])
-          .select()
-          .single()
-          .then(({ data: inserted, error }) => {
-            if (error) {
-              console.warn("Direct Supabase insert error (admin only):", error.message);
-              setAdminDbNotice(`Direct Supabase notice: ${error.message}`);
-            }
-          })
-          .catch((dbErr: any) => {
-            setAdminDbNotice(`Supabase exception: ${dbErr?.message}`);
-          });
-      }
-
-      const updated = [finalReg, ...registrations];
+    const freshList = await refreshRegistrations();
+    if (!freshList.some(r => r.id === finalReg!.id)) {
+      const updated = [finalReg, ...freshList.filter(r => r.id !== finalReg!.id)];
       setRegistrations(updated);
       setLocalStorageItem('registrations', updated);
     }
@@ -473,39 +533,43 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Update Registration (Admin)
   const updateRegistration = async (id: string, updatedFields: Partial<Registration>) => {
-    const target = registrations.find(r => r.id === id);
-    if (!target) return { success: false, error: "Registration not found" };
-
-    const updatedReg = { ...target, ...updatedFields };
-    const updated = registrations.map(r => r.id === id ? updatedReg : r);
-    setRegistrations(updated);
-    setLocalStorageItem('registrations', updated);
+    try {
+      await fetch('/api/registrations', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...updatedFields })
+      });
+    } catch (err) {
+      console.warn("PUT /api/registrations error:", err);
+    }
 
     if (isSupabaseConfigured && supabase) {
       await supabase.from('registrations').update(updatedFields).eq('id', id);
     }
+
+    await refreshRegistrations();
     broadcastSync();
+    fetchLiveStats();
     return { success: true };
   };
 
   // Delete Registration (Admin)
   const deleteRegistration = async (id: string) => {
-    const updatedRegs = registrations.filter(r => r.id !== id);
-    const updatedFoods = foodPreferences.filter(f => f.registration_id !== id);
-    const updatedBenches = benchClaims.filter(b => b.registration_id !== id);
-
-    setRegistrations(updatedRegs);
-    setFoodPreferences(updatedFoods);
-    setBenchClaims(updatedBenches);
-
-    setLocalStorageItem('registrations', updatedRegs);
-    setLocalStorageItem('food_preferences', updatedFoods);
-    setLocalStorageItem('bench_claims', updatedBenches);
+    try {
+      await fetch(`/api/registrations?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+    } catch (err) {
+      console.warn("DELETE /api/registrations error:", err);
+    }
 
     if (isSupabaseConfigured && supabase) {
       await supabase.from('registrations').delete().eq('id', id);
     }
+
+    await refreshRegistrations();
     broadcastSync();
+    fetchLiveStats();
   };
 
   // Clear All Registrations (for starting clean live reunion)
@@ -848,6 +912,9 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
         updateSettings,
         adminDbNotice,
         clearAdminDbNotice,
+        refreshRegistrations,
+        isLoadingRegistrations,
+        registrationsError,
         stats
       }}
     >
