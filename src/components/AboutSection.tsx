@@ -64,7 +64,7 @@ export const AboutSection: React.FC = () => {
               STAR MATRIC HR. SEC. SCHOOL • BATCH 2024 - 2025
             </h4>
             <p className="text-xs text-[#927B6C] font-semibold">
-              Reuniting 60 classmates and our respected teachers under one roof
+              Reuniting all classmates and our respected teachers under one roof
             </p>
           </div>
         </div>
@@ -103,7 +103,7 @@ export const AboutSection: React.FC = () => {
               Batch 2024 - 2025
             </h3>
             <p className="text-xs text-[#927B6C] leading-relaxed font-semibold">
-              Reuniting 60 classmates for one grand day of celebration, laughter, and keepsakes.
+              Reuniting all classmates for one grand day of celebration, laughter, and keepsakes.
             </p>
           </div>
         </div>

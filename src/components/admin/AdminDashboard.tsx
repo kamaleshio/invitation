@@ -328,9 +328,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="clay-card bg-white/95 border border-[#F0E1CE] p-5 shadow-md">
             <span className="text-xs uppercase font-bold text-[#8E725B]">Registrations</span>
-            <div className="text-3xl font-black text-[#594337] mt-1">{stats.totalRegistrations} / 60</div>
+            <div className="text-3xl font-black text-[#594337] mt-1">{stats.totalRegistrations}</div>
             <span className="text-[11px] text-[#D4A343] font-medium">
-              {stats.spotsRemaining} spots available
+              Registered Classmates (Open)
             </span>
           </div>
 

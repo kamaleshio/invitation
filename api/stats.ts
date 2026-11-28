@@ -19,8 +19,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const MAX_CAPACITY = 60;
-
   try {
     // Query database count of registered attendees (head: true is high-performance count query)
     const { count, error } = await supabase
@@ -36,15 +34,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const totalRegistered = count ?? 0;
-    const availableSlots = Math.max(0, MAX_CAPACITY - totalRegistered);
-    const isCapacityFull = totalRegistered >= MAX_CAPACITY;
 
     return res.status(200).json({
       configured: true,
       totalRegistered,
-      availableSlots,
-      capacity: MAX_CAPACITY,
-      isCapacityFull,
+      capacity: null,
+      isCapacityFull: false,
       timestamp: new Date().toISOString()
     });
 

@@ -165,35 +165,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
         </motion.div>
 
-        {/* Live Classmate Registration Counter with 60-Student Capacity Tracking */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="w-full sm:w-auto px-6 py-3 rounded-[24px] clay-surface-cream border border-[#F0E1CE] flex items-center justify-center space-x-3"
-          >
-            <div className="relative flex items-center justify-center">
-              <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping absolute opacity-75" />
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 relative" />
-            </div>
-            <Users className="w-4 h-4 text-[#E9B95B]" />
-            <span className="text-xs sm:text-sm font-bold text-[#594337]">
-              <strong className="text-[#413027] text-base">{stats.totalRegistrations}</strong> of <strong>60</strong> Students Registered
-            </span>
-          </motion.div>
-
-          {/* Remaining Spots Badge */}
-          <div className="px-5 py-3 rounded-[24px] clay-surface-peach text-xs font-bold text-[#594337] flex items-center space-x-2">
-            <span>🔥</span>
-            <span>
-              {stats.isCapacityFull ? (
-                <strong className="text-rose-700">Capacity Full (60/60)</strong>
-              ) : (
-                <>Only <strong>{stats.spotsRemaining} spots remaining</strong> (Max 60)</>
-              )}
-            </span>
-          </div>
-        </div>
-
       </div>
     </section>
   );

@@ -205,27 +205,6 @@ export const CountdownSection: React.FC<CountdownSectionProps> = ({
           </motion.button>
         </div>
 
-        {/* Real Production Database Registration Capacity Meter */}
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 relative z-10">
-          <div className="px-5 py-2.5 rounded-full clay-surface-cream border border-[#F0E1CE] text-xs font-bold text-[#594337] flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <Users className="w-4 h-4 text-[#E9B95B]" />
-            <span>
-              <strong>{stats.totalRegistrations} / 60</strong> Registered classmates
-            </span>
-          </div>
-
-          <div className="px-5 py-2.5 rounded-full clay-surface-cream border border-[#F0E1CE] text-xs font-bold text-[#594337]">
-            {stats.isCapacityFull ? (
-              <strong className="text-rose-600">ALL 60 SLOTS FILLED!</strong>
-            ) : (
-              <span className="text-[#594337]">
-                <strong className="text-[#E9B95B]">{stats.spotsRemaining} SPOTS REMAINING</strong>
-              </span>
-            )}
-          </div>
-        </div>
-
         {/* Calendar Sync Link */}
         <div className="pt-4 flex items-center justify-center text-xs relative z-10">
           <a

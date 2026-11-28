@@ -113,11 +113,9 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
   const handleShareWhatsApp = () => {
     sound.playPop();
     const siteUrl = window.location.origin;
-    const msg = `Hey classmate! I just registered for the ${REUNION_CONFIG.schoolName} Reunion on 27 December 2026. Only 60 spots available! Register here: ${siteUrl}`;
+    const msg = `Hey classmate! I just registered for the ${REUNION_CONFIG.schoolName} Reunion on 27 December 2026 at ${REUNION_CONFIG.confirmedVenueName}. Register here: ${siteUrl}`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
   };
-
-  const capacityPercent = Math.min(100, Math.round((stats.totalRegistrations / 60) * 100));
 
   return (
     <section id="registration" className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-10 w-full overflow-hidden">
@@ -133,59 +131,8 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
         </h2>
 
         <p className="text-sm sm:text-base text-[#927B6C] max-w-xl mx-auto font-semibold">
-          Strict 60-Student Capacity • Secure your confirmed seat at <strong>{REUNION_CONFIG.confirmedVenueName}</strong>
+          Secure your confirmed seat for our grand reunion at <strong>{REUNION_CONFIG.confirmedVenueName}</strong>
         </p>
-      </div>
-
-      {/* Capacity Counter */}
-      <div className="max-w-xl mx-auto">
-        <div className="clay-card p-6 bg-[#FFFFFF] border-2 border-[#F0E1CE] shadow-sm">
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-2 text-center py-2">
-              <div>
-                <div className="text-[10px] sm:text-xs font-extrabold uppercase text-[#927B6C] tracking-wider">REGISTERED</div>
-                <div className="text-xl sm:text-2xl font-black text-[#594337] mt-0.5">
-                  {stats.totalRegistrations}
-                </div>
-              </div>
-              <div className="border-x border-[#F0E1CE]">
-                <div className="text-[10px] sm:text-xs font-extrabold uppercase text-[#927B6C] tracking-wider">AVAILABLE SLOTS</div>
-                <div className={`text-xl sm:text-2xl font-black mt-0.5 ${stats.isCapacityFull ? 'text-rose-600' : 'text-[#E9B95B]'}`}>
-                  {stats.spotsRemaining}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] sm:text-xs font-extrabold uppercase text-[#927B6C] tracking-wider">CAPACITY</div>
-                <div className="text-xl sm:text-2xl font-black text-[#594337] mt-0.5">60</div>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center text-xs font-black text-[#594337]">
-              <span>
-                <strong>{stats.totalRegistrations} / 60 REGISTERED</strong>
-              </span>
-              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                stats.isCapacityFull ? 'bg-rose-100 text-rose-800' : 'bg-[#E9B95B]/20 text-[#594337] border border-[#E9B95B]'
-              }`}>
-                {stats.isCapacityFull ? 'ALL SLOTS FILLED' : `${stats.spotsRemaining} SPOTS REMAINING`}
-              </span>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="w-full h-3 rounded-full bg-[#F0E1CE] overflow-hidden p-0.5 shadow-inner">
-              <motion.div 
-                className={`h-full rounded-full transition-all duration-700 ${
-                  stats.isCapacityFull 
-                    ? 'bg-rose-500' 
-                    : 'bg-gradient-to-r from-[#E9B95B] via-[#F2CE85] to-[#D99F37]'
-                }`}
-                initial={{ width: 0 }}
-                animate={{ width: `${capacityPercent}%` }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-              />
-            </div>
-          </div>
-        </div>
       </div>
 
       <AnimatePresence mode="wait">
@@ -214,29 +161,7 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
               </div>
             </div>
 
-            {stats.isCapacityFull ? (
-              <div className="p-8 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center mx-auto text-2xl font-black border border-rose-300">
-                  ✕
-                </div>
-                <h3 className="text-2xl font-black text-rose-700 uppercase">
-                  ALL REGISTRATION SLOTS ARE FILLED!
-                </h3>
-                <p className="text-sm text-[#927B6C] max-w-md mx-auto font-semibold">
-                  All 60 student registration slots have been filled. If you are a classmate needing assistance, please reach out to the reunion committee on WhatsApp.
-                </p>
-                <a
-                  href={REUNION_CONFIG.whatsappGroupUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center space-x-2 px-6 py-3 rounded-[20px] clay-button-gold text-sm font-black text-[#413027]"
-                >
-                  <MessageCircle className="w-4 h-4 text-[#413027]" />
-                  <span>Contact Organizer on WhatsApp</span>
-                </a>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {/* Full Name */}
                   <div>
@@ -359,15 +284,14 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     type="submit"
-                    disabled={isSubmitting || stats.isCapacityFull}
+                    disabled={isSubmitting}
                     className="w-full sm:w-auto px-10 py-4 rounded-[22px] clay-button-gold text-base font-black tracking-wide flex items-center justify-center space-x-2 shadow-md mx-auto disabled:opacity-50 text-[#413027]"
                   >
-                    <span>{isSubmitting ? "Securing Slot..." : "CONFIRM REGISTRATION"}</span>
+                    <span>{isSubmitting ? "Confirming..." : "CONFIRM REGISTRATION"}</span>
                     <ArrowRight className="w-5 h-5 text-[#413027]" />
                   </motion.button>
                 </div>
               </form>
-            )}
           </motion.div>
         ) : (
           /* ================= SUCCESS CONFIRMATION IN WARM CLAY ================= */
@@ -383,7 +307,7 @@ export const RegistrationSection: React.FC<RegistrationSectionProps> = ({
               <div className="space-y-3">
                 <div className="flex items-center space-x-2 text-xs font-black uppercase tracking-widest text-[#E9B95B]">
                   <span>🎓</span>
-                  <span>Registered Classmate Confirmed • #{stats.totalRegistrations} of 60</span>
+                  <span>Registered Classmate Confirmed • {successReg.name}</span>
                 </div>
 
                 <h3 className="text-3xl sm:text-4xl font-black text-[#594337]">

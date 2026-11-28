@@ -311,9 +311,9 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const rawCount = registrations.length;
     // Always prioritize fresh production database count from Vercel API
     const totalRegistrations = serverCount !== null ? serverCount : rawCount;
-    const maxCapacity = REUNION_CONFIG.maxStudentCapacity || 60;
-    const spotsRemaining = Math.max(0, maxCapacity - totalRegistrations);
-    const isCapacityFull = totalRegistrations >= maxCapacity;
+    const maxCapacity = 999;
+    const spotsRemaining = 999;
+    const isCapacityFull = false;
 
     let yesCount = 0;
     let maybeCount = 0;
@@ -396,17 +396,8 @@ export const ReunionDataProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
-  // 1. Add Registration (STRICT 60-STUDENT LIMIT; GUARANTEED CONFIRMATION FOR STUDENT; DB ERRORS ISOLATED TO ADMIN)
+  // 1. Add Registration (OPEN / FREE CAPACITY FOR ALL CLASSMATES)
   const addRegistration = async (regData: Omit<Registration, 'id' | 'created_at'>) => {
-    const maxLimit = REUNION_CONFIG.maxStudentCapacity || 60;
-    const currentTotal = serverCount !== null ? serverCount : registrations.length;
-    if (currentTotal >= maxLimit) {
-      return { 
-        success: false, 
-        error: `Registration is full! We have reached our maximum capacity of ${maxLimit} students. Please reach out to the reunion committee.` 
-      };
-    }
-
     const cleanPhone = regData.phone.replace(/\D/g, '');
     let savedReg: Registration | null = null;
 

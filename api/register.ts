@@ -9,8 +9,6 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SU
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const MAX_CAPACITY = 60;
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
   res.setHeader('Pragma', 'no-cache');
@@ -37,23 +35,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const status = ['Yes', 'Maybe', 'No'].includes(attendance_status) ? attendance_status : 'Yes';
 
   try {
-    // 2. Check current registration count atomically
-    const { count, error: countError } = await supabase
-      .from('registrations')
-      .select('id', { count: 'exact', head: true });
-
-    if (countError) {
-      console.error('Count query error:', countError);
-    }
-
-    const currentCount = count || 0;
-    if (currentCount >= MAX_CAPACITY) {
-      return res.status(400).json({ 
-        error: `ALL REGISTRATION SLOTS ARE FILLED! Maximum capacity of ${MAX_CAPACITY} students has been reached.` 
-      });
-    }
-
-    // 3. Prepare registration record
+    // Open / free registration for all classmates (no capacity cap)
+    // 2. Prepare registration record
     let phoneToInsert = cleanPhone;
     const insertPayload: any = {
       name: name.trim(),

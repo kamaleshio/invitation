@@ -169,7 +169,7 @@ export const AppContent: React.FC = () => {
           {/* 5. School Memory Gallery ("THE DAYS WE WISH WE COULD RELIVE") */}
           <SchoolMemoryGallery />
 
-          {/* 6. Student Registration ("LET'S SEE WHO'S COMING!" - Max 60 Limit) */}
+          {/* 6. Student Registration ("LET'S SEE WHO'S COMING!") */}
           <RegistrationSection 
             onNavigateToSection={handleNavigateToSection}
           />

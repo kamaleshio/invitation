@@ -46,7 +46,7 @@ export const REUNION_CONFIG = {
   eventTimezone: "Asia/Kolkata (IST)",
   eventTimestamp: "2026-12-27T10:00:00+05:30", // IST
   
-  maxStudentCapacity: 60, // 60-Student Strict Registration Limit
+  maxStudentCapacity: null, // Free / Open Registration for all classmates
 
   batchYear: "2024 - 2025",
   batchName: "Star Matric Hr. Sec. School, Karur • Batch 2024 - 2025",
