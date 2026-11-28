@@ -57,9 +57,9 @@ export const REUNION_CONFIG = {
   confirmedVenueDescription: "Confirmed venue for our grand reunion feast & celebrations at Habibi Mandi, Karur",
 
   // Inquiries / Doubts Helpline Number
-  contactPhone: "8838082883",
-  contactPhoneDisplay: "+91 88380 82883",
-  contactPhoneTel: "tel:+918838082883",
+  contactPhone: "9943065085",
+  contactPhoneDisplay: "+91 99430 65085",
+  contactPhoneTel: "tel:+919943065085",
 
   // Official WhatsApp Group Link & Name
   whatsappGroupName: "Unscripted batch",
